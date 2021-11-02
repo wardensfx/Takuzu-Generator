@@ -8,10 +8,12 @@
             angular.module('takuzu', []).controller('generatorController', function($scope, $rootScope) {
                 $scope.cfg = {
                     gridSize: 20,
-                    gridFill: 25
+                    gridFill: 25,
+                    firstGridMaxSize: 6
                 };
 
                 $scope.grid = [];
+                $scope.resolved = [];
 
                 $scope.genGrid = () => {
                     $scope.cfg.gridSize = ($scope.cfg.gridSize < 4)? 4:$scope.cfg.gridSize;
@@ -19,31 +21,101 @@
 
                     $scope.grid = [];
                     let maxFilling = Math.pow($scope.cfg.gridSize, 2) * $scope.cfg.gridFill/100;
-                    let filled = 0;
                     
+                    // Array gen
                     for(let i=0; i<$scope.cfg.gridSize; i++) {
                         $scope.grid[i] = [];
                         for(let j=0; j<$scope.cfg.gridSize; j++) 
                             $scope.grid[i][j] = null;
                     }
+                    $scope.resolved = angular.copy($scope.grid);
                     
+                    // Solved grid gen
+                    let completion = 0, k = 0;
+                    if($scope.cfg.gridSize > $scope.cfg.firstGridMaxSize) 
+                        completion = $scope.cfg.gridSize - $scope.cfg.firstGridMaxSize;
+
+                    do {
+                        if($scope.resolve(completion, k)) {
+                            $scope.resolved = angular.copy($scope.grid);
+                            k++;
+                        }
+                    } while (k*2 <= completion)
+
+                    // Removing %unwated filling
+                    let removed = 0;
                     for(let i=0; i<$scope.cfg.gridSize; i++) {
                         for(let j=0; j<$scope.cfg.gridSize; j++) {
-                            if(Math.random() < $scope.cfg.gridFill/100) {
-                                let doFill = $scope.genNumber(i, j);
-                                if( (doFill !== null) && (filled < ($scope.cfg.gridFill/100 * Math.pow($scope.cfg.gridSize, 2)) ) ) {
-                                    $scope.grid[i][j] = doFill;
-                                    filled++;
-                                }
-                                else $scope.grid[i][j] = null;
+                            if( 
+                                (Math.random() > $scope.cfg.gridFill/100) 
+                                //&& (removed < (1-$scope.cfg.gridFill/100) * Math.pow($scope.cfg.gridSize, 2)) 
+                            ) {
+                                $scope.grid[i][j] = null;
+                                removed++;
                             }
                         }
                     }
-                    console.log($scope.cfg.gridSize, $scope.grid);
+                };
+
+                $scope.resolve = (completion, k) => {
+                    try {
+                        for(let i=0; i<$scope.cfg.gridSize - completion + k*2; i++) {
+                            for(let j=0; j<$scope.cfg.gridSize - completion + k*2; j++) {
+                                if($scope.grid[i][j] == null) {
+                                    let doFill = $scope.genNumber(i, j, $scope.cfg.gridSize - completion + k*2);
+                                    if(doFill !== null) 
+                                         $scope.grid[i][j] = doFill;
+                                    else $scope.grid[i][j] = null;
+                                }
+                            }
+                        }
+                        return true;
+                    } catch(e) {
+                        $scope.grid = angular.copy($scope.resolved);
+                    }
+                    return false;
                 };
                 
-                $scope.genNumber = (x, y) => {
+                $scope.genNumber = (x, y, gridsize) => {
+                    let canbe = [0, 1];
+                    let changed = false
+
+                    for (var i = canbe.length - 1; i >= 0; i--) {
+                        let countX = 0, countY = 0;
+                        
+                        // Count iterations on lines
+                        for(let p=0; p<gridsize; p++)
+                            if($scope.grid[p][y] === canbe[i]) countX++;
+
+                        // Count interation on cols
+                        for(let p=0; p<gridsize; p++)
+                            if($scope.grid[x][p] === canbe[i]) countY++;
+
+                        // Rules
+                        if (
+                            // Line check
+                            ($scope.grid[x-1] !== undefined && $scope.grid[x-2] !== undefined && $scope.grid[x-1][y] === canbe[i] && $scope.grid[x-2][y] === canbe[i]) ||
+                            // Col check
+                            ($scope.grid[x][y-1] !== undefined && $scope.grid[x][y-2] !== undefined && $scope.grid[x][y-1] === canbe[i] && $scope.grid[x][y-2] === canbe[i]) || 
+                            // Horizontal && Vertical neighborhood check
+                            (countX >= gridsize / 2) || (countY >= gridsize / 2)
+
+                        ) {
+                            canbe.splice(i, 1);
+                            continue;
+                        }
+                    }
+
+                    // Setting random
+                    let ret = canbe[Math.floor(Math.random()*canbe.length)];
+                    if(ret === undefined) throw ("Grille impossible");
+
+                    return ret;
+                };
+
+                $scope.genNumberOLD = (x, y) => {
                     let changed = false, count, nb = Math.round(Math.random());
+                    let canbe = [0, 1];
 
                     // line check
                     if($scope.grid[x-1] !== undefined && $scope.grid[x-2] !== undefined && $scope.grid[x-1][y] === nb && $scope.grid[x-2][y] === nb) {
@@ -55,11 +127,14 @@
                     for(let p=0; p<$scope.cfg.gridSize; p++)
                         if($scope.grid[p][y] === nb) count++;
                     
-                    if(count >= $scope.cfg.gridSize / 2) nb = null;
+                    if(count >= $scope.cfg.gridSize / 2) {
+                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
+                        else nb = null;
+                    }
                     
                     // col check
                     if($scope.grid[x][y-1] !== undefined && $scope.grid[x][y-2] !== undefined && $scope.grid[x][y-1] === nb && $scope.grid[x][y-2] === nb) {
-                        if(!changed && nb !== null) nb = Math.abs(nb - 1);
+                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
                         else nb = null;
                     }
                     
@@ -68,8 +143,13 @@
                         for(let p=0; p<$scope.cfg.gridSize; p++)
                             if($scope.grid[x][p] === nb) count++;
                     
-                    if(count >= $scope.cfg.gridSize / 2) nb = null;
+                    if(count >= $scope.cfg.gridSize / 2) {
+                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
+                        else nb = null;
+                    }
                     
+                    if(nb === null) throw ("Grille impossible")
+
                     return nb;
                 };
 
