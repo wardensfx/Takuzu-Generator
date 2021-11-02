@@ -113,46 +113,6 @@
                     return ret;
                 };
 
-                $scope.genNumberOLD = (x, y) => {
-                    let changed = false, count, nb = Math.round(Math.random());
-                    let canbe = [0, 1];
-
-                    // line check
-                    if($scope.grid[x-1] !== undefined && $scope.grid[x-2] !== undefined && $scope.grid[x-1][y] === nb && $scope.grid[x-2][y] === nb) {
-                        nb = Math.abs(nb - 1);
-                        changed = true;
-                    }
-                    
-                    count = 0;
-                    for(let p=0; p<$scope.cfg.gridSize; p++)
-                        if($scope.grid[p][y] === nb) count++;
-                    
-                    if(count >= $scope.cfg.gridSize / 2) {
-                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
-                        else nb = null;
-                    }
-                    
-                    // col check
-                    if($scope.grid[x][y-1] !== undefined && $scope.grid[x][y-2] !== undefined && $scope.grid[x][y-1] === nb && $scope.grid[x][y-2] === nb) {
-                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
-                        else nb = null;
-                    }
-                    
-                    count = 0;
-                    if(nb !== null)
-                        for(let p=0; p<$scope.cfg.gridSize; p++)
-                            if($scope.grid[x][p] === nb) count++;
-                    
-                    if(count >= $scope.cfg.gridSize / 2) {
-                        if(!changed && nb !== null) nb = Math.abs(nb - 1), changed = true;
-                        else nb = null;
-                    }
-                    
-                    if(nb === null) throw ("Grille impossible")
-
-                    return nb;
-                };
-
                 $scope.clickable = (o) => {
                     return (typeof(o) === 'object');
                 };
