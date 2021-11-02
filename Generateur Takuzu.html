@@ -55,7 +55,7 @@
                     for(let p=0; p<$scope.cfg.gridSize; p++)
                         if($scope.grid[p][y] === nb) count++;
                     
-                    if(count > $scope.cfg.gridSize / 2) nb = null;
+                    if(count >= $scope.cfg.gridSize / 2) nb = null;
                     
                     // col check
                     if($scope.grid[x][y-1] !== undefined && $scope.grid[x][y-2] !== undefined && $scope.grid[x][y-1] === nb && $scope.grid[x][y-2] === nb) {
@@ -68,7 +68,7 @@
                         for(let p=0; p<$scope.cfg.gridSize; p++)
                             if($scope.grid[x][p] === nb) count++;
                     
-                    if(count > $scope.cfg.gridSize / 2) nb = null;
+                    if(count >= $scope.cfg.gridSize / 2) nb = null;
                     
                     return nb;
                 };
